@@ -27,10 +27,10 @@ def iterDic(dic):
         return dic.items()
 
 class KoboPatch:
-    def __init__(self, name, status, help_text, group, patch_file):
+    def __init__(self, name, status, group, patch_file):
         self.name = name
         self.status = status
-        self.help_text = help_text
+        self.help_text = ''
         self.group = group
         self.patch_file = patch_file
         self.patch_replacements = []
@@ -49,28 +49,11 @@ class KoboPatch:
             if m:
                 self.patch_replacements.append(m.group())
 
-    def get_help_text(self, data):
-        found = False
-        complete = False
-        help_t = ''
-        for line in data:
-            if not found:
-                if '<Patch>' in line:
-                    found = True
-            if found:
-                if '</Patch>' not in line:
-                    if '<Patch>' not in line:
-                        help_t += line
-                else:
-                    found = False
-                    complete = True
-            if complete:
-                if self.name in help_t:
-                    break
-                else:
-                    help_t = ''
-                    complete = False
-        self.help_text = help_t
+    def get_help_text(self, text):
+        search_str = r'<Patch>(.+?patch_name = ' + re.escape(self.name) + r'.+?)</Patch>'
+        re_match_help_txt = re.compile(search_str, re.DOTALL)
+        s = re_match_help_txt.search(text)
+        self.help_text = s.group(1)
 
 class PatchGUI(Tk):
     def __init__(self, parent):
@@ -183,45 +166,27 @@ class PatchGUI(Tk):
     def read_patch_files(self, fn_dic):
         for fn in fn_dic:
             with io.open(os.path.normpath(fn), 'r', encoding='utf8') as patch_file:
-                fn_dic[fn] = patch_file.readlines()
+                #fn_dic[fn] = patch_file.readlines()
+                fn_dic[fn] = ''
+                for line in patch_file:
+                    fn_dic[fn] += line
         return fn_dic
 
     def gen_patch_obj_list(self, fn, patch_text):
         patch_obj_list = []
-        find_val_regex = re.compile(r'`.+?`')
-        patch_info = ()
-        patch_info_list = []
-        found = -1
-        for line in patch_text:
-            if 'patch_name' in line:
-                patch_info = ()
-                s = find_val_regex.search(line)
-                patch_info += (s.group(),)
-                found += 1
-            if 'patch_enable' in line:
-                s = find_val_regex.search(line)
-                patch_info += (s.group(),)
-            if 'patch_group' in line:
-                s = find_val_regex.search(line)
-                patch_info += (s.group(),)
+        re_find_attrib = re.compile(r'patch_name = (`.+?`).+?patch_enable = (`.+?`)(.+?patch_group = (`.+?`))?', re.DOTALL)
+        attrib_match_list = re_find_attrib.finditer(patch_text)
 
-            if found >= 0 and patch_info not in patch_info_list:
-                if len(patch_info_list) == found:
-                    patch_info_list.append(patch_info)
-                else:
-                    patch_info_list[found] = patch_info
+        for match in attrib_match_list:
+            mut_ex_group = ''
+            if match.group(4):
+                mut_ex_group = match.group(4)
 
-        for pi in patch_info_list:
-            if len(pi) < 3:
-                pi += ('',)
-            patch_obj = KoboPatch(name=pi[0], status=pi[1], group=pi[2], help_text='Placeholder help text',
-                                          patch_file=fn)
-            patch_obj.get_patch_replacements(patch_text)
+            patch_obj = KoboPatch(name=match.group(1), status=match.group(2), group=mut_ex_group, patch_file=fn)
             patch_obj.get_help_text(patch_text)
             patch_obj_list.append(patch_obj)
 
         return patch_obj_list
-
 
 def quit(root):
     root.destroy()
