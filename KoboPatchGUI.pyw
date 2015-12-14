@@ -264,7 +264,6 @@ class PatchGUI(Tk):
         search_replace = r'\1' + patch_object.status
         s = re.sub(search_pattern, search_replace, self.file_dic[patch_fn], flags=re.DOTALL | re.UNICODE)
         self.file_dic[patch_fn] = s
-        print(self.file_dic[patch_fn])
 
     def calc_grid_pos(self, pos, cols):
         """
