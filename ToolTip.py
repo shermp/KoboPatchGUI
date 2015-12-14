@@ -2,6 +2,11 @@
 # (although the 'calltips' extension is partly based on this code)
 # may be useful for some purposes in (or almost in ;) the current project scope
 # Ideas gleaned from PySol
+#
+# NOTE: This file has been taken from idlelib, and modified by me. The above comment
+# is from the original script.
+# Source: https://hg.python.org/cpython/file/63a00d019bb2/Lib/idlelib/ToolTip.py
+# --Sherman
 
 try:
     from tkinter import *
