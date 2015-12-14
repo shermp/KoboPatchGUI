@@ -223,7 +223,7 @@ class PatchGUI(Tk):
         # Only continue if the user confirms
         if messagebox.askyesno('Are you sure?', 'Do you wish to write the changes to file?\n\nNote this will '
                                                  'overwrite the exiting patch file(s)'):
-
+            success = False
             # Checks that mutually exclusive options have not been set together. If they have, alert the user,
             # and abort before writing to file(s)
             for (fn, patch_obj_list) in iterDic(self.patch_obj_dic):
@@ -249,7 +249,10 @@ class PatchGUI(Tk):
                 for obj in patch_obj_list:
                     self.prep_for_writing(fn, obj)
 
-                    self.write_patch_files(fn)
+                if self.write_patch_files(fn):
+                    success = True
+            if success:
+                messagebox.showinfo('Succsee!', 'The files were successfully written to disk')
 
     def prep_for_writing(self, patch_fn, patch_object):
         """
@@ -286,10 +289,12 @@ class PatchGUI(Tk):
         try:
             with io.open(os.path.normpath(fn), 'w', encoding='utf8') as patch_file:
                 patch_file.write(self.file_dic[fn])
+            return True
         except EnvironmentError:
             messagebox.showerror('File Error!', 'There was a problem writing to the file.\n\nCheck that the file '
                                                 'isn\'t in use by another program, and that you have write '
                                                 'permissions to the file and folder')
+            return False
 
     def read_patch_files(self, fn_dic):
         """
