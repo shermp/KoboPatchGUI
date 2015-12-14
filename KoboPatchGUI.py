@@ -1,11 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 try:
-    #from tkinter import *
+    from tkinter import *
     from tkinter import ttk
     from tkinter.filedialog import askopenfilenames
+    from tkinter import messagebox
 except (ImportError):
+    from Tkinter import *
     import ttk
     from tkFileDialog import askopenfilenames
+    import tkMessageBox as messagebox
 
 from ToolTip import *
 import io
@@ -50,10 +53,13 @@ class KoboPatch:
                 self.patch_replacements.append(m.group())
 
     def get_help_text(self, text):
-        search_str = r'<Patch>(.+?patch_name = ' + re.escape(self.name) + r'.+?)</Patch>'
-        re_match_help_txt = re.compile(search_str, re.DOTALL)
-        s = re_match_help_txt.search(text)
-        self.help_text = s.group(1)
+        search_str = r'<Patch>(\npatch_name = ' + re.escape(self.name) + r'.+?)</Patch>'
+        search_str = search_str.replace('\\`', '`')
+
+        re_match_help_txt = re.search(search_str, text, re.DOTALL)
+        help_t = re_match_help_txt.group(1)
+        self.help_text = help_t
+
 
 class PatchGUI(Tk):
     def __init__(self, parent):
@@ -153,8 +159,39 @@ class PatchGUI(Tk):
             patch_obj.status = '`no`'
 
     def apply_changes(self):
-        pass
+        for (fn, patch_obj_list) in iterDic(self.patch_obj_dic):
+            mut_exl_dic = {}
+            for obj in patch_obj_list:
+                if obj.group and 'yes' in obj.status:
+                    if obj.group not in mut_exl_dic:
+                        mut_exl_dic[obj.group] = []
+                        mut_exl_dic[obj.group].append(obj.name)
+                    else:
+                        mut_exl_dic[obj.group].append(obj.name)
 
+            for (group, names) in iterDic(mut_exl_dic):
+                if len(names) > 1:
+                    name_str = '\n'
+                    for name in names:
+                        name_str += '    ' + name + '\n'
+                    messagebox.showerror('Mutually Exlusive Options Detected!',
+                                         'The following options cannot be enabled together: \n' + name_str)
+                    return
+
+            for obj in patch_obj_list:
+                self.write_patch_files(fn, obj)
+
+    def write_patch_files(self, patch_fn, patch_object):
+        for (file_fn, patch_text) in iterDic(self.file_dic):
+            if patch_fn in file_fn:
+                search_pattern = r'(patch_name = )' + re.escape(patch_object.name) + r'(.+?patch_enable = )' + \
+                                 r'`.+?`'
+                search_pattern = search_pattern.replace('\\`', '`')
+                s = re.search(search_pattern, patch_text, re.DOTALL)
+                #print(search_pattern)
+                #print(s.group())
+        pass
+            #with io.open(os.path.normpath(fn), 'w', encoding='utf8') as patch_file:
 
     def calc_grid_pos(self, pos, cols):
         calc_row = pos // cols
@@ -166,7 +203,6 @@ class PatchGUI(Tk):
     def read_patch_files(self, fn_dic):
         for fn in fn_dic:
             with io.open(os.path.normpath(fn), 'r', encoding='utf8') as patch_file:
-                #fn_dic[fn] = patch_file.readlines()
                 fn_dic[fn] = ''
                 for line in patch_file:
                     fn_dic[fn] += line
