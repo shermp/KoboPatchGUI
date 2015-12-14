@@ -56,7 +56,7 @@ class KoboPatch:
         search_str = r'<Patch>(\npatch_name = ' + re.escape(self.name) + r'.+?)</Patch>'
         search_str = search_str.replace('\\`', '`')
 
-        re_match_help_txt = re.search(search_str, text, re.DOTALL)
+        re_match_help_txt = re.search(search_str, text, flags=re.DOTALL | re.UNICODE)
         help_t = re_match_help_txt.group(1)
         self.help_text = help_t
 
@@ -188,7 +188,7 @@ class PatchGUI(Tk):
                                  r'`.+?`'
                 search_pattern = search_pattern.replace('\\`', '`')
                 search_replace = r'\1' + patch_object.status
-                s = re.sub(search_pattern, r'\1'+patch_object.status, patch_text, re.DOTALL, re.UNICODE)
+                s = re.sub(search_pattern, search_replace, patch_text, flags=re.DOTALL | re.UNICODE)
                 print('Status:  ' + patch_object.status)
                 print(search_pattern)
                 print(s)
@@ -211,7 +211,8 @@ class PatchGUI(Tk):
 
     def gen_patch_obj_list(self, fn, patch_text):
         patch_obj_list = []
-        re_find_attrib = re.compile(r'patch_name = (`.+?`).+?patch_enable = (`.+?`)(.+?patch_group = (`.+?`))?', re.DOTALL)
+        search_pattern = r'patch_name = (`.+?`).+?patch_enable = (`.+?`)(.+?patch_group = (`.+?`))?'
+        re_find_attrib = re.compile(search_pattern, flags=re.DOTALL | re.UNICODE)
         attrib_match_list = re_find_attrib.finditer(patch_text)
 
         for match in attrib_match_list:
