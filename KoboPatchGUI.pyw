@@ -164,32 +164,31 @@ class PatchGUI(Tk):
             patch_obj.status = '`no`'
 
     def apply_changes(self):
-        for (fn, patch_obj_list) in iterDic(self.patch_obj_dic):
-            mut_exl_dic = {}
-            for obj in patch_obj_list:
-                if obj.group and 'yes' in obj.status:
-                    if obj.group not in mut_exl_dic:
-                        mut_exl_dic[obj.group] = []
-                        mut_exl_dic[obj.group].append(obj.name)
-                    else:
-                        mut_exl_dic[obj.group].append(obj.name)
-
-            for (group, names) in iterDic(mut_exl_dic):
-                if len(names) > 1:
-                    name_str = '\n'
-                    for name in names:
-                        name_str += '    ' + name + '\n'
-                    messagebox.showerror('Mutually Exlusive Options Detected!',
-                                         'The following options cannot be enabled together: \n' + name_str)
-                    return
-
-            for obj in patch_obj_list:
-                self.prep_for_writing(fn, obj)
-
-            if messagebox.askyesno('Are you sure?', 'Do you wish to write the changes to file?\n\nNote this will '
+        if messagebox.askyesno('Are you sure?', 'Do you wish to write the changes to file?\n\nNote this will '
                                                  'overwrite the exiting patch file(s)'):
-                self.write_patch_files(fn)
+            for (fn, patch_obj_list) in iterDic(self.patch_obj_dic):
+                mut_exl_dic = {}
+                for obj in patch_obj_list:
+                    if obj.group and 'yes' in obj.status:
+                        if obj.group not in mut_exl_dic:
+                            mut_exl_dic[obj.group] = []
+                            mut_exl_dic[obj.group].append(obj.name)
+                        else:
+                            mut_exl_dic[obj.group].append(obj.name)
 
+                for (group, names) in iterDic(mut_exl_dic):
+                    if len(names) > 1:
+                        name_str = '\n'
+                        for name in names:
+                            name_str += '    ' + name + '\n'
+                        messagebox.showerror('Mutually Exlusive Options Detected!',
+                                             'The following options cannot be enabled together: \n' + name_str)
+                        return
+
+                for obj in patch_obj_list:
+                    self.prep_for_writing(fn, obj)
+
+                    self.write_patch_files(fn)
 
     def prep_for_writing(self, patch_fn, patch_object):
         search_pattern = r'(patch_name = ' + re.escape(patch_object.name) + r'.+?patch_enable = )' + \
