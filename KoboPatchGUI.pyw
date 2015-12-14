@@ -184,13 +184,14 @@ class PatchGUI(Tk):
     def write_patch_files(self, patch_fn, patch_object):
         for (file_fn, patch_text) in iterDic(self.file_dic):
             if patch_fn in file_fn:
-                search_pattern = r'(patch_name = )' + re.escape(patch_object.name) + r'(.+?patch_enable = )' + \
+                search_pattern = r'(patch_name = ' + re.escape(patch_object.name) + r'.+?patch_enable = )' + \
                                  r'`.+?`'
                 search_pattern = search_pattern.replace('\\`', '`')
-                s = re.search(search_pattern, patch_text, re.DOTALL)
-                #print(search_pattern)
-                #print(s.group())
-        pass
+                search_replace = r'\1' + patch_object.status
+                s = re.sub(search_pattern, r'\1'+patch_object.status, patch_text, re.DOTALL, re.UNICODE)
+                print('Status:  ' + patch_object.status)
+                print(search_pattern)
+                print(s)
             #with io.open(os.path.normpath(fn), 'w', encoding='utf8') as patch_file:
 
     def calc_grid_pos(self, pos, cols):
