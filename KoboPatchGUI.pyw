@@ -13,6 +13,7 @@ except ImportError:
     import tkMessageBox as messagebox
 
 from ToolTip import *
+from collections import OrderedDict
 import io
 import os
 import sys
@@ -43,9 +44,9 @@ class KoboPatch:
     def get_patch_replacements(self, data):
         start = 0
         find = re.compile(r'^#{0,1}replace_.+?$')
-        for (pos, line) in enumerate(data):
+        for (index, line) in enumerate(data):
             if 'patch_name = '+self.name in line:
-                start = pos
+                start = index
                 break
         for line in data[start:]:
             if '</Patch>' in line:
@@ -67,10 +68,10 @@ class PatchGUI(Tk):
     def __init__(self, parent):
         Tk.__init__(self, parent)
         self.parent = parent
-        self.file_dic = {}
-        self.orig_patch_obj_dic = {}
-        self.patch_obj_dic = {}
-        self.cb_list = []
+        self.file_dic = OrderedDict()
+        self.orig_patch_obj_dic = OrderedDict()
+        self.patch_obj_dic = OrderedDict()
+        self.cb_dic = OrderedDict()
         self.container = []
         self.init_completed = False
         self.apply_button = None
@@ -90,40 +91,40 @@ class PatchGUI(Tk):
 
     def initialize(self):
         self.patch_obj_dic = copy.deepcopy(self.orig_patch_obj_dic)
-        ext_pos = 0
+        cont_index = 0
         for (fn, patch_obj_list) in iterDic(self.patch_obj_dic):
-            self.cb_list.append([])
+            self.cb_dic[fn] = []
             self.container.append(ttk.LabelFrame(self.parent, text=fn))
-            self.container[ext_pos].pack(fill='x')
+            self.container[cont_index].pack(fill='x')
 
-            for (pos, obj) in enumerate(patch_obj_list):
+            for (cb_index, obj) in enumerate(patch_obj_list):
                 var = StringVar()
                 cb_name = ''
                 if obj.group:
                     cb_name = obj.name + '\n(' + obj.group + ')'
                 else:
                     cb_name = obj.name
-                self.cb_list[ext_pos].append(ttk.Checkbutton(self.container[ext_pos], text=cb_name,
-                                                         variable=var, onvalue='yes', offvalue='no',
-                                                         command=lambda ep=ext_pos, p=pos, patch_obj=obj:
-                                                         self.toggle_check(ep, p, patch_obj)))
-                self.cb_list[ext_pos][pos].var = var
+                self.cb_dic[fn].append(ttk.Checkbutton(self.container[cont_index], text=cb_name,
+                                                              variable=var, onvalue='yes', offvalue='no',
+                                                              command=lambda fn=fn, p=cb_index, patch_obj=obj:
+                                                              self.toggle_check(fn, p, patch_obj)))
+                self.cb_dic[fn][cb_index].var = var
                 if 'yes' in obj.status:
-                    self.cb_list[ext_pos][pos].var.set('yes')
+                    self.cb_dic[fn][cb_index].var.set('yes')
                 else:
-                    self.cb_list[ext_pos][pos].var.set('no')
-                grid_pos = self.calc_grid_pos(pos, cols=3)
-                self.cb_list[ext_pos][pos].grid(row=grid_pos[0], column=grid_pos[1], sticky='W')
-                self.cb_list[ext_pos][pos].columnconfigure(0, weight=1)
-                self.cb_list[ext_pos][pos].columnconfigure(1, weight=1)
-                self.cb_list[ext_pos][pos].columnconfigure(2, weight=1)
+                    self.cb_dic[fn][cb_index].var.set('no')
+                grid_pos = self.calc_grid_pos(cb_index, cols=3)
+                self.cb_dic[fn][cb_index].grid(row=grid_pos[0], column=grid_pos[1], sticky='W')
+                self.cb_dic[fn][cb_index].columnconfigure(0, weight=1)
+                self.cb_dic[fn][cb_index].columnconfigure(1, weight=1)
+                self.cb_dic[fn][cb_index].columnconfigure(2, weight=1)
 
-                self.cb_list[ext_pos][pos].bind('<Button-3>', lambda event, ep=ext_pos, p=pos, patch_obj=obj:
-                                                        self.edit_repl_opts(event, ep, p, patch_obj))
+                self.cb_dic[fn][cb_index].bind('<Button-3>', lambda event, fn=fn, p=cb_index, patch_obj=obj:
+                                                        self.edit_repl_opts(event, fn, p, patch_obj))
 
-                tip = ToolTip(self.cb_list[ext_pos][pos], obj.help_text)
+                tip = ToolTip(self.cb_dic[fn][cb_index], obj.help_text)
 
-            ext_pos += 1
+            cont_index += 1
 
         self.container.append(ttk.Frame(self.parent))
         self.container[-1].pack(pady=5)
@@ -136,7 +137,7 @@ class PatchGUI(Tk):
 
 
     def disable_all_patches(self):
-        for chk_list in self.cb_list:
+        for chk_list in self.cb_dic.values():
             for cb in chk_list:
                 cb.var.set('no')
 
@@ -146,7 +147,7 @@ class PatchGUI(Tk):
 
     def restore_defaults(self):
         self.patch_obj_dic = copy.deepcopy(self.orig_patch_obj_dic)
-        for (cb_list, patch_obj_list) in zip(self.cb_list, self.patch_obj_dic.values()):
+        for (cb_list, patch_obj_list) in zip(self.cb_dic.values(), self.patch_obj_dic.values()):
             for (cb, patch_obj) in zip(cb_list, patch_obj_list):
                 if 'yes' in patch_obj.status:
                      cb.var.set('yes')
@@ -156,8 +157,8 @@ class PatchGUI(Tk):
     def edit_repl_opts(self, event, ext_pos, pos, patch_obj):
         pass
 
-    def toggle_check(self, ext_pos, pos, patch_obj):
-        if 'yes' in self.cb_list[ext_pos][pos].var.get():
+    def toggle_check(self, fn, pos, patch_obj):
+        if 'yes' in self.cb_dic[fn][pos].var.get():
             patch_obj.status = '`yes`'
         else:
             patch_obj.status = '`no`'
