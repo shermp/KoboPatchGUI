@@ -4,7 +4,7 @@ try:
     from tkinter import ttk
     from tkinter.filedialog import askopenfilenames
     from tkinter import messagebox
-except (ImportError):
+except ImportError:
     from Tkinter import *
     import ttk
     from tkFileDialog import askopenfilenames
@@ -179,20 +179,21 @@ class PatchGUI(Tk):
                     return
 
             for obj in patch_obj_list:
-                self.write_patch_files(fn, obj)
+                self.prep_for_writing(fn, obj)
 
-    def write_patch_files(self, patch_fn, patch_object):
-        for (file_fn, patch_text) in iterDic(self.file_dic):
-            if patch_fn in file_fn:
-                search_pattern = r'(patch_name = ' + re.escape(patch_object.name) + r'.+?patch_enable = )' + \
-                                 r'`.+?`'
-                search_pattern = search_pattern.replace('\\`', '`')
-                search_replace = r'\1' + patch_object.status
-                s = re.sub(search_pattern, search_replace, patch_text, flags=re.DOTALL | re.UNICODE)
-                print('Status:  ' + patch_object.status)
-                print(search_pattern)
-                print(s)
-            #with io.open(os.path.normpath(fn), 'w', encoding='utf8') as patch_file:
+            if messagebox.askyesno('Are you sure?', 'Do you wish to write the changes to file?\n\nNote this will '
+                                                 'overwrite the exiting patch file(s)'):
+                self.write_patch_files(fn)
+
+
+    def prep_for_writing(self, patch_fn, patch_object):
+        search_pattern = r'(patch_name = ' + re.escape(patch_object.name) + r'.+?patch_enable = )' + \
+                         r'`.+?`'
+        search_pattern = search_pattern.replace('\\`', '`')
+        search_replace = r'\1' + patch_object.status
+        s = re.sub(search_pattern, search_replace, self.file_dic[patch_fn], flags=re.DOTALL | re.UNICODE)
+        self.file_dic[patch_fn] = s
+        print(self.file_dic[patch_fn])
 
     def calc_grid_pos(self, pos, cols):
         calc_row = pos // cols
@@ -200,13 +201,25 @@ class PatchGUI(Tk):
 
         return calc_row, calc_col
 
+    def write_patch_files(self, fn):
+        try:
+            with io.open(os.path.normpath(fn), 'w', encoding='utf8') as patch_file:
+                patch_file.write(self.file_dic[fn])
+        except EnvironmentError:
+            messagebox.showerror('File Error!', 'There was a problem writing to the file.\n\nCheck that the file '
+                                                'isn\'t in use by another program, and that you have write '
+                                                'permissions to the file and folder')
 
     def read_patch_files(self, fn_dic):
         for fn in fn_dic:
-            with io.open(os.path.normpath(fn), 'r', encoding='utf8') as patch_file:
-                fn_dic[fn] = ''
-                for line in patch_file:
-                    fn_dic[fn] += line
+            try:
+                with io.open(os.path.normpath(fn), 'r', encoding='utf8') as patch_file:
+                    fn_dic[fn] = ''
+                    for line in patch_file:
+                        fn_dic[fn] += line
+            except EnvironmentError:
+                messagebox.showerror('Read Error', 'There was a problem reading the file.\n\nCheck that you have '
+                                                   'permission to read the file.')
         return fn_dic
 
     def gen_patch_obj_list(self, fn, patch_text):
