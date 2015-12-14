@@ -88,9 +88,9 @@ class PatchGUI(Tk):
 
     def initialize(self):
         self.patch_obj_dic = copy.deepcopy(self.orig_patch_obj_dic)
+        ext_pos = 0
         for (fn, patch_obj_list) in iterDic(self.patch_obj_dic):
             self.cb_list.append([])
-            ext_pos = -1
             self.container.append(ttk.LabelFrame(self.parent, text=fn))
             self.container[ext_pos].pack(fill='x')
 
@@ -120,6 +120,8 @@ class PatchGUI(Tk):
                                                         self.edit_repl_opts(event, ep, p, patch_obj))
 
                 tip = ToolTip(self.cb_list[ext_pos][pos], obj.help_text)
+
+            ext_pos += 1
 
         self.container.append(ttk.Frame(self.parent))
         self.container[-1].pack(pady=5)
