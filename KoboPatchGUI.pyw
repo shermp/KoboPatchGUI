@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# Kobo Patch GUI Copyright (c) 2015 Sherman Perry
+#
+# This software is provided under the MIT license. Please see LICENSE.txt for details
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 try:
     from tkinter import *
