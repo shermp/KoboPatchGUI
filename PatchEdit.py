@@ -163,26 +163,38 @@ def prep_for_writing(patch_fn, patch_object, file_dic):
 
 
 def write_patch_files(fn, file_dic):
-        """
-        Write the changes to file(s)
-        :param fn:
-        :return:
-        """
-        succsess = False
-        error_title = None
-        error_msg = None
-        try:
-            with io.open(os.path.normpath(fn), 'w', encoding='utf8') as patch_file:
-                patch_file.write(file_dic[fn])
-                succsess = True
-            return succsess, error_title, error_msg
-        except EnvironmentError:
-            error_title = 'File Error!'
-            error_msg = 'There was a problem writing to the following file:\n\n' + \
-                        fn + '\n\n' \
-                        'Check that the file isn\'t in use by another program, and that you have write ' \
-                        'permissions to the file and folder'
-            return succsess, error_title, error_msg
+    """
+    Write the changes to file(s)
+    :param fn:
+    :return:
+    """
+    succsess = False
+    error_title = None
+    error_msg = None
+    try:
+        with io.open(os.path.normpath(fn), 'w', encoding='utf8') as patch_file:
+            patch_file.write(file_dic[fn])
+            succsess = True
+        return succsess, error_title, error_msg
+    except EnvironmentError:
+        error_title = 'File Error!'
+        error_msg = 'There was a problem writing to the following file:\n\n' + \
+                    fn + '\n\n' \
+                    'Check that the file isn\'t in use by another program, and that you have write ' \
+                    'permissions to the file and folder'
+        return succsess, error_title, error_msg
+
+def calc_grid_pos(pos, cols):
+    """
+    A little function to calculate the grid position of checkboxes
+    :param pos:
+    :param cols:
+    :return:
+    """
+    calc_row = pos // cols
+    calc_col = pos % cols
+
+    return calc_row, calc_col
 
 def edit_repl_opts(event, ext_pos, pos, patch_obj):
     pass

@@ -96,7 +96,7 @@ class PatchGUI(Tk):
                     self.cb_dic[fn][cb_index].var.set('yes')
                 else:
                     self.cb_dic[fn][cb_index].var.set('no')
-                grid_pos = self.calc_grid_pos(cb_index, cols=3)
+                grid_pos = calc_grid_pos(cb_index, cols=3)
                 self.cb_dic[fn][cb_index].grid(row=grid_pos[0], column=grid_pos[1], sticky='W')
                 self.cb_dic[fn][cb_index].columnconfigure(0, weight=1)
                 self.cb_dic[fn][cb_index].columnconfigure(1, weight=1)
@@ -160,18 +160,6 @@ class PatchGUI(Tk):
             patch_obj.status = '`yes`'
         else:
             patch_obj.status = '`no`'
-
-    def calc_grid_pos(self, pos, cols):
-        """
-        A little function to calculate the grid position of checkboxes
-        :param pos:
-        :param cols:
-        :return:
-        """
-        calc_row = pos // cols
-        calc_col = pos % cols
-
-        return calc_row, calc_col
 
     def app_chgs(self):
         if messagebox.askyesno('Are you sure?', 'Are you sure you wish to apply changes?'):
