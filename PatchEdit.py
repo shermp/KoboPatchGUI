@@ -55,8 +55,16 @@ class Patch:
         search_str = search_str.replace('\\`', '`')
 
         re_match_help_txt = re.search(search_str, text, flags=re.DOTALL | re.UNICODE)
-        help_t = re_match_help_txt.group(1)
-        self.help_text = help_t
+        text = re_match_help_txt.group(1)
+        if '##' not in text:
+            self.help_text = text
+        else:
+            help_t = ''
+            help_patt = r'## (.+?\n)'
+            help_t_match = re.finditer(help_patt, text, flags=re.DOTALL | re.UNICODE)
+            for match in help_t_match:
+                help_t += match.group(1)
+            self.help_text = help_t
 
 
 def gen_patch_obj_list(fn, patch_text):
@@ -140,9 +148,9 @@ def apply_changes(patch_obj_dic, file_dic):
         r_p_f_success, error_title, error_msg = write_patch_files(fn, file_dic)
         if not r_p_f_success:
             success = False
-        else:
-            success = True
+            return success, error_title, error_msg
 
+    success = True
     return success, error_title, error_msg
 
 
