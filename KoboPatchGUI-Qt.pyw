@@ -2,10 +2,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QMessageBox, QFileDialog, QGridLayout, QHBoxLayout, \
-    QVBoxLayout, QGroupBox, QCheckBox, QPushButton, QAction
+    QVBoxLayout, QGroupBox, QCheckBox, QPushButton, QRadioButton
 from PatchEdit import *
 from collections import OrderedDict
 import copy
+
+SET_DISABLE_RB = True
+UNSET_DISABLE_RB = False
 
 class PatchGUI(QMainWindow):
     def __init__(self):
@@ -15,11 +18,11 @@ class PatchGUI(QMainWindow):
         self.orig_patch_obj_dic = OrderedDict()
         self.patch_obj_dic = OrderedDict()
         self.cb_dic = OrderedDict()
+        self.group_dic = OrderedDict()
         self.vBox_list = []
         self.apply_button = None
         self.disable_all_button = None
         self.defaults_button = None
-
         self.choose_files()
 
     def choose_files(self):
@@ -43,31 +46,55 @@ class PatchGUI(QMainWindow):
         for (fn, patch_obj_list) in iterDic(self.patch_obj_dic):
             self.cb_dic[fn] = []
             gb = QGroupBox(fn)
+            gb.setStyleSheet('QGroupBox { font-weight: bold; } ')
             cb_grid = QGridLayout(self)
+            cb_grid_index = 0
+
+            group_vbox = QVBoxLayout(self)
             # Create and add checkboxes to appropriate LabelFrame
             for (cb_index, obj) in enumerate(patch_obj_list):
                 # Create checkbox variable and checkbox label for display
-                cb_name = ''
-                if obj.group:
-                    cb_name = obj.name + '\n(' + obj.group + ')'
-                else:
-                    cb_name = obj.name
-
+                cb_name = obj.name
                 # Create and add checkboxes to the LabelFrame, using the grid geometry manager
-                self.cb_dic[fn].append(QCheckBox(cb_name))
+                if obj.group:
+                    self.cb_dic[fn].append(QRadioButton(cb_name))
+                else:
+                    self.cb_dic[fn].append(QCheckBox(cb_name))
                 # Set initial state of checkboxes
                 if 'yes' in obj.status:
-                    self.cb_dic[fn][cb_index].setCheckState(Qt.Checked)
+                    self.cb_dic[fn][cb_index].setChecked(True)
                 else:
-                    self.cb_dic[fn][cb_index].setCheckState(Qt.Unchecked)
+                    self.cb_dic[fn][cb_index].setChecked(False)
 
-                self.cb_dic[fn][cb_index].stateChanged.connect(self.toggle_check)
+                if obj.group:
+                    self.cb_dic[fn][cb_index].toggled.connect(self.toggle_check)
+                else:
+                    self.cb_dic[fn][cb_index].stateChanged.connect(self.toggle_check)
                 self.cb_dic[fn][cb_index].setToolTip(self.patch_obj_dic[fn][cb_index].help_text)
-                grid_pos = calc_grid_pos(cb_index, cols=3)
 
-                cb_grid.addWidget(self.cb_dic[fn][cb_index], grid_pos[0], grid_pos[1])
+                if not obj.group:
+                    grid_pos = calc_grid_pos(cb_grid_index, cols=3)
+                    cb_grid.addWidget(self.cb_dic[fn][cb_index], grid_pos[0], grid_pos[1])
+                    cb_grid_index += 1
+                else:
+                    if obj.group not in self.group_dic:
+                        self.group_dic[obj.group] = [QGroupBox(obj.group), QHBoxLayout(self), SET_DISABLE_RB, \
+                                                    QRadioButton('Disable')]
+                        self.group_dic[obj.group][0].setStyleSheet('QGroupBox { font-weight: normal; color: blue; }')
+                    if 'yes' in obj.status:
+                        self.group_dic[obj.group][2] = UNSET_DISABLE_RB
+                    self.group_dic[obj.group][1].addWidget(self.cb_dic[fn][cb_index])
 
-            gb.setLayout(cb_grid)
+            for g in self.group_dic.values():
+                if g[2] == SET_DISABLE_RB:
+                    g[3].setChecked(True)
+                g[1].addWidget(g[3])
+                g[0].setLayout(g[1])
+                group_vbox.addWidget(g[0])
+            group_vbox.addLayout(group_vbox)
+            group_vbox.addLayout(cb_grid)
+            gb.setLayout(group_vbox)
+
             vBox.addWidget(gb)
 
             cont_index += 1
@@ -101,7 +128,10 @@ class PatchGUI(QMainWindow):
         """
         for chk_list in self.cb_dic.values():
             for cb in chk_list:
-                cb.setCheckState(Qt.Unchecked)
+                cb.setChecked(False)
+
+        for val in self.group_dic.values():
+            val[3].setChecked(True)
 
         for (fn, patch_obj_list) in iterDic(self.patch_obj_dic):
             for patch_obj in patch_obj_list:
@@ -116,9 +146,13 @@ class PatchGUI(QMainWindow):
         for (cb_list, patch_obj_list) in zip(self.cb_dic.values(), self.patch_obj_dic.values()):
             for (cb, patch_obj) in zip(cb_list, patch_obj_list):
                 if 'yes' in patch_obj.status:
-                     cb.setCheckState(Qt.Checked)
+                    cb.setChecked(True)
                 else:
-                     cb.setCheckState(Qt.Unchecked)
+                    cb.setChecked(False)
+
+        for val in self.group_dic.values():
+            if val[2] == SET_DISABLE_RB:
+                val[3].setChecked(True)
 
     def toggle_check(self, event):
         cb = self.sender()
