@@ -97,6 +97,7 @@ class PatchGUI(QMainWindow):
                         self.group_dic[obj.group] = [QGroupBox(obj.group), QHBoxLayout(self), SET_DISABLE_RB, \
                                                     QRadioButton('Disable')]
                         self.group_dic[obj.group][0].setStyleSheet('QGroupBox { font-weight: normal; color: blue; }')
+                        self.group_dic[obj.group][3].setToolTip('<qt/>Disable all patches in the '+obj.group+' group.')
                     if 'yes' in obj.status:
                         self.group_dic[obj.group][2] = UNSET_DISABLE_RB
                     self.group_dic[obj.group][1].addWidget(self.cb_dic[fn][cb_index])
