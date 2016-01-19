@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import sys
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QMessageBox, QFileDialog, QGridLayout, QHBoxLayout, \
     QVBoxLayout, QGroupBox, QCheckBox, QPushButton, QRadioButton
 from PatchEdit import *
@@ -11,7 +10,14 @@ SET_DISABLE_RB = True
 UNSET_DISABLE_RB = False
 
 class PatchGUI(QMainWindow):
+    """
+    The main GUI window, using QMainWindow, and QWidgets
+    """
     def __init__(self):
+        """
+        Set initial variables, and launch the patch file dialog chooser.
+        :return:
+        """
         self.app = QApplication(sys.argv)
         super(PatchGUI, self).__init__()
         self.file_dic = OrderedDict()
@@ -23,9 +29,14 @@ class PatchGUI(QMainWindow):
         self.apply_button = None
         self.disable_all_button = None
         self.defaults_button = None
+
         self.choose_files()
 
     def choose_files(self):
+        """
+        Allows user to select one or more Kobo patch files. If the dialog is canceled, the program exits.
+        :return:
+        """
         fn_list, file_type = QFileDialog.getOpenFileNames(caption='Open File', filter='Kobo Patch (*.patch)')
         if fn_list:
             fd = {fn: None for fn in fn_list}
@@ -40,6 +51,10 @@ class PatchGUI(QMainWindow):
             self.close()
 
     def initialize(self):
+        """
+        Initialise the main GUI window.
+        :return:
+        """
         self.patch_obj_dic = copy.deepcopy(self.orig_patch_obj_dic)
         cont_index = 0
         vBox = QVBoxLayout(self)
@@ -51,11 +66,9 @@ class PatchGUI(QMainWindow):
             cb_grid_index = 0
 
             group_vbox = QVBoxLayout(self)
-            # Create and add checkboxes to appropriate LabelFrame
+            # Create and add checkboxes or radiobuttons to appropriate group boxes
             for (cb_index, obj) in enumerate(patch_obj_list):
-                # Create checkbox variable and checkbox label for display
                 cb_name = obj.name
-                # Create and add checkboxes to the LabelFrame, using the grid geometry manager
                 if obj.group:
                     self.cb_dic[fn].append(QRadioButton(cb_name))
                 else:
@@ -66,16 +79,19 @@ class PatchGUI(QMainWindow):
                 else:
                     self.cb_dic[fn][cb_index].setChecked(False)
 
+                # Checkboxes and radio buttons emit different events when changed
                 if obj.group:
                     self.cb_dic[fn][cb_index].toggled.connect(self.toggle_check)
                 else:
                     self.cb_dic[fn][cb_index].stateChanged.connect(self.toggle_check)
+                # Set the tooltip for each CB/RB
                 self.cb_dic[fn][cb_index].setToolTip(self.patch_obj_dic[fn][cb_index].help_text)
-
+                # Layout CB's that don't belong to a group in a grid
                 if not obj.group:
                     grid_pos = calc_grid_pos(cb_grid_index, cols=3)
                     cb_grid.addWidget(self.cb_dic[fn][cb_index], grid_pos[0], grid_pos[1])
                     cb_grid_index += 1
+                # If they are in a group, create a new Group Box for every group
                 else:
                     if obj.group not in self.group_dic:
                         self.group_dic[obj.group] = [QGroupBox(obj.group), QHBoxLayout(self), SET_DISABLE_RB, \
@@ -85,12 +101,14 @@ class PatchGUI(QMainWindow):
                         self.group_dic[obj.group][2] = UNSET_DISABLE_RB
                     self.group_dic[obj.group][1].addWidget(self.cb_dic[fn][cb_index])
 
+            # set group layouts
             for g in self.group_dic.values():
                 if g[2] == SET_DISABLE_RB:
                     g[3].setChecked(True)
                 g[1].addWidget(g[3])
                 g[0].setLayout(g[1])
                 group_vbox.addWidget(g[0])
+            # add layouts to the parent layout
             group_vbox.addLayout(group_vbox)
             group_vbox.addLayout(cb_grid)
             gb.setLayout(group_vbox)
@@ -99,13 +117,14 @@ class PatchGUI(QMainWindow):
 
             cont_index += 1
 
+        # Create buttons
         self.apply_button = QPushButton('Apply Changes')
         self.apply_button.clicked.connect(self.app_chgs)
         self.disable_all_button = QPushButton("Disable All")
         self.disable_all_button.clicked.connect(self.disable_all_patches)
         self.defaults_button = QPushButton('Restore Settings')
         self.defaults_button.clicked.connect(self.restore_defaults)
-
+        # Add buttons to parent layout
         button_box = QHBoxLayout()
         button_box.addStretch()
         button_box.addWidget(self.apply_button)
@@ -114,6 +133,7 @@ class PatchGUI(QMainWindow):
         button_box.addStretch()
         vBox.addLayout(button_box)
 
+        # Add parent layout to main window, and show the window
         self.setCentralWidget(QWidget(self))
         self.centralWidget().setLayout(vBox)
         self.setWindowTitle('Kobo Patch GUI')
@@ -155,6 +175,11 @@ class PatchGUI(QMainWindow):
                 val[3].setChecked(True)
 
     def toggle_check(self, event):
+        """
+        Set (or unset) patch object status when the CB/RB is toggled.
+        :param event:
+        :return:
+        """
         cb = self.sender()
         name = cb.text()
         for patch_list in self.patch_obj_dic.values():
@@ -165,7 +190,11 @@ class PatchGUI(QMainWindow):
                     else:
                         obj.status = '`no`'
 
-    def app_chgs(self, event):
+    def app_chgs(self):
+        """
+        Runs the apply_changes function from PatchEdit.py
+        :return:
+        """
         ask_confirm = QMessageBox.question(self, 'Are you sure?', 'Are you sure you wish to write the changes to the '
                                                                  'patch files?', QMessageBox.Yes | QMessageBox.No,
                                            QMessageBox.No)
