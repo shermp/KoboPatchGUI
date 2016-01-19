@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import sys
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QMessageBox, QFileDialog, QGridLayout, QHBoxLayout, \
+    QVBoxLayout, QGroupBox, QCheckBox, QPushButton, QAction
 from PatchEdit import *
 from collections import OrderedDict
 import copy
@@ -60,8 +61,8 @@ class PatchGUI(QMainWindow):
                 else:
                     self.cb_dic[fn][cb_index].setCheckState(Qt.Unchecked)
 
-                self.cb_dic[fn][cb_index].setToolTip(obj.help_text)
                 self.cb_dic[fn][cb_index].stateChanged.connect(self.toggle_check)
+                self.cb_dic[fn][cb_index].setToolTip(self.patch_obj_dic[fn][cb_index].help_text)
                 grid_pos = calc_grid_pos(cb_index, cols=3)
 
                 cb_grid.addWidget(self.cb_dic[fn][cb_index], grid_pos[0], grid_pos[1])
@@ -79,9 +80,11 @@ class PatchGUI(QMainWindow):
         self.defaults_button.clicked.connect(self.restore_defaults)
 
         button_box = QHBoxLayout()
+        button_box.addStretch()
         button_box.addWidget(self.apply_button)
         button_box.addWidget(self.disable_all_button)
         button_box.addWidget(self.defaults_button)
+        button_box.addStretch()
         vBox.addLayout(button_box)
 
         self.setCentralWidget(QWidget(self))
@@ -122,7 +125,7 @@ class PatchGUI(QMainWindow):
         name = cb.text()
         for patch_list in self.patch_obj_dic.values():
             for obj in patch_list:
-                if name in obj.name:
+                if obj.name in name:
                     if cb.isChecked():
                         obj.status = '`yes`'
                     else:
@@ -138,6 +141,9 @@ class PatchGUI(QMainWindow):
                 QMessageBox.critical(self, error_title, error_msg)
             else:
                 QMessageBox.information(self, 'Sussess!', 'The files were successfully written.')
+
+    def edit(self):
+        pass
 
 if __name__ == '__main__':
     pg = PatchGUI()
